@@ -1,0 +1,102 @@
+<?xml version = "1.0" encoding = "utf-8" ?>
+
+<project name = "lpaServer" default = "package-war" basedir = ".">
+  	<property file = "build.properties"/>
+  	<property file = "version.properties"/>
+	
+  	<property name = "dir.src" value = "src/main"/>
+  	<property name = "dir.lib" value = "lib"/>
+	<property name = "dir.web.lib" value = "WebContent/WEB-INF/lib"/>
+  	<property name = "dir.build.classes" value = "WebContent/WEB-INF/classes"/>
+  	<property name = "dist.dir" value="build" />
+	<property name = "compile.debug" value="true"/>
+	<property name = "compile.debug.level" value="lines,vars,source"/>
+	
+  	<property environment = "env"/>
+
+  	<path id="project.class.path">
+    		<pathelement location = "${dir.build.classes}"/>
+    
+    		<fileset dir = "${dir.lib}">
+      			<include name = "**/*.jar"/>
+    		</fileset>
+  		
+  		<fileset dir = "${dir.web.lib}">
+  		      		<include name = "**/*.jar"/>
+  		    	</fileset>
+  	</path>
+
+  	<target name = "prepare">
+    	<echo message = "Create build directories ..."/>
+  	
+    	<mkdir dir = "${dir.build.classes}"/>
+  		<mkdir dir = "${dist.dir}"/>
+  	
+  	</target>
+	
+	<target name = "clean" description = "Clean this project">
+	    <echo message = "Remove all generated files ..."/>
+	    
+	    <delete  includeemptydirs = "true" failonerror = "false">
+	        <fileset dir = "${dir.build.classes}" includes = "**/*.*, **/*" defaultexcludes = "true" >
+				<exclude name = "**/.svn/**"/>
+			</fileset>
+	    </delete>
+	  	
+	  	<delete file = "${dist.dir}/lpa.war" />
+	</target>
+	
+	<target name = "remove-deploy" description = "remove deployed files">
+	    <echo message = "Remove all deployed files ..."/>
+	    
+	    <delete  dir = "${deploy.dir}/lpa" failonerror = "false"/>
+	  	
+	  	<delete file = "${deploy.dir}/lpa.war" />
+	</target>
+
+  	<target name = "compile" description = "Compile java source" depends = "prepare, clean">
+    	<echo message = "Compile all java source files ..."/>
+  
+   		<javac debug = "true" debuglevel = "lines,vars,source" 
+         	classpathref = "project.class.path" srcdir = "${dir.src}" destdir = "${dir.build.classes}" />
+  	</target>
+
+  	<target name = "copy-config-files" description = "copy config files to build directory" depends = "prepare">
+		<echo message = "Compile all config files ..."/>
+  		<copy todir = "${dir.build.classes}" failonerror = "true">
+  		  	<fileset dir = "${dir.src}">
+  		  		<exclude name = "**/com/**"/>
+  		  		<exclude name = "**/.svn/**"/>
+  		  	</fileset>
+  		</copy>
+		<!-- This extra copy is for adding external qa files and updates-->
+  		<copy todir = "${dir.build.classes}" failonerror = "true" overwrite="true">
+			<fileset erroronmissingdir = "false" dir = "${external.qa.dir}">
+  	  			<exclude name = "**/.svn/**"/>
+			</fileset>
+		</copy>
+	</target>
+	
+  	<target name = "package-war" depends = "clean, compile, copy-config-files"
+    	description = "Create a war file">
+    	<echo message = "Create lpa.war file ..."/>
+    
+    	<zip destfile = "${dist.dir}/lpa.war">
+      		<fileset dir = "./WebContent">
+        		<include name = "**/*"/>
+        		<exclude name = "**/.svn/*"/>
+      			<!--
+      			<exclude name = "WEB-INF/lib/servlet-api.jar"/>
+      			-->
+      		</fileset>
+    	</zip>
+    
+  	</target>
+
+  	<target name = "deploy-war" depends = "clean, package-war, remove-deploy" description = "Deploy this project">
+    	<echo message = "deploy the build to web server ..."/>
+  		
+  		<copy todir = "${deploy.dir}" failonerror = "true" file = "${dist.dir}/lpa.war"/>
+  	</target>
+
+</project>
